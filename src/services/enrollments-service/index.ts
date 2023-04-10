@@ -4,24 +4,23 @@ import { invalidDataError, notFoundError } from '@/errors';
 import addressRepository, { CreateAddressParams } from '@/repositories/address-repository';
 import enrollmentRepository, { CreateEnrollmentParams } from '@/repositories/enrollment-repository';
 import { exclude } from '@/utils/prisma-utils';
-import { ViaCEPAddress } from '@/protocols';
 
 async function getAddressFromCEP(cep: string) {
-  const cepRequest = await request.get(`${process.env.VIA_CEP_API}/${cep}/json/`);
+  const result = await request.get(`${process.env.VIA_CEP_API}/${cep}/json/`);
 
-  if (!cepRequest.data) {
+  if (!result.data || result.data?.erro) {
     throw notFoundError();
   }
 
-  const result = {
-    logradouro: cepRequest.data.logradouro,
-    complemento: cepRequest.data.complemento,
-    bairro: cepRequest.data.bairro,
-    cidade: cepRequest.data.localidade,
-    uf: cepRequest.data.uf,
+  const address = {
+    logradouro: result.data.logradouro,
+    complemento: result.data.complemento,
+    bairro: result.data.bairro,
+    cidade: result.data.localidade,
+    uf: result.data.uf,
   };
 
-  return result;
+  return address;
 }
 
 async function getOneWithAddressByUserId(userId: number): Promise<GetOneWithAddressByUserIdResult> {
