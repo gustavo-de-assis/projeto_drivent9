@@ -1,3 +1,4 @@
+import { Ticket } from '@prisma/client';
 import { prisma } from '@/config';
 
 async function findMany() {
@@ -15,9 +16,20 @@ async function findTicket(enrollmentId: number) {
   });
 }
 
+async function createTicket(ticket: TicketInfo) {
+  return prisma.ticket.create({
+    data: {
+      ...ticket,
+    },
+  });
+}
+
 const ticketRepository = {
   findMany,
   findTicket,
+  createTicket,
 };
+
+export type TicketInfo = Omit<Ticket, 'id' | 'createdAt' | 'updatedAt'>;
 
 export default ticketRepository;
