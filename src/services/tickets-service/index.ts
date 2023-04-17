@@ -15,7 +15,7 @@ async function getTicket(userId: number): Promise<Ticket> {
     throw notFoundError();
   }
 
-  const ticket = await ticketRepository.findTicket(enrollment.id);
+  const ticket = await ticketRepository.findTicketByEnrollment(enrollment.id);
   if (!ticket) {
     throw notFoundError();
   }
@@ -37,7 +37,7 @@ async function createTicket(userId: number, ticketTypeId: number) {
 
   await ticketRepository.createTicket(ticketData);
 
-  const ticket = await ticketRepository.findTicket(enrollment.id);
+  const ticket = await ticketRepository.findTicketByEnrollment(enrollment.id);
 
   return ticket;
 }
