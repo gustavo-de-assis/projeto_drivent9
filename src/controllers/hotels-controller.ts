@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { AuthenticatedRequest } from '@/middlewares';
-import hotelService from '@/services/hotels-service';
+import { hotelService } from '@/services/hotels-service';
 
 export async function getHotels(req: AuthenticatedRequest, res: Response) {
   const { userId } = req;
