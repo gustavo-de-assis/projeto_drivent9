@@ -22,7 +22,13 @@ async function listUserHotels(userId: number) {
 async function findHotels(userId: number) {
   await listUserHotels(userId);
 
-  return await hotelRepository.getHotels();
+  const hotels = await hotelRepository.getHotels();
+
+  if (!hotels) {
+    throw notFoundError();
+  }
+
+  return hotels;
 }
 
 async function findHotelRooms(userId: number, hotelId: number) {
