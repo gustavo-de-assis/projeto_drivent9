@@ -69,7 +69,7 @@ async function updateBooking(userId: number, roomId: number, bookingId: number) 
   }
 
   const userRoom = bookingRepository.findUserRoom(bookingId, userId);
-  if (!userRoom || !bookingId) {
+  if (!userRoom) {
     throw forbiddenError();
   }
 
