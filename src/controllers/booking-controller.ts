@@ -39,10 +39,6 @@ export async function updateBooking(req: AuthenticatedRequest, res: Response) {
   const { roomId } = req.body;
   const { bookingId } = req.params;
 
-  if (isNaN(Number(bookingId))) {
-    return res.sendStatus(httpStatus.FORBIDDEN);
-  }
-
   try {
     const newRoom = await bookingService.updateBooking(userId, roomId, Number(bookingId));
     res.status(httpStatus.OK).send(newRoom);
