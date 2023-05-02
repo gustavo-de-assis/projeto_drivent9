@@ -48,7 +48,38 @@ async function createBooking(userId: number, roomId: number) {
   return { bookingId: newBooking.id };
 }
 
+async function updateBooking(userId: number, roomId: number, bookingId: number) {
+  const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
+  if (!enrollment) {
+    throw forbiddenError();
+  }
+
+  const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
+  if (!ticket || ticket.TicketType.isRemote || ticket.status !== 'PAID' || !ticket.TicketType.includesHotel) {
+    throw forbiddenError();
+  }
+
+  const booking = await bookingRepository.findBooking(roomId);
+  if (!booking) {
+    throw notFoundError();
+  }
+
+  if (booking.Booking.length === booking.capacity) {
+    throw forbiddenError();
+  }
+
+  const userRoom = bookingRepository.findUserRoom(bookingId, userId);
+  if (!userRoom) {
+    throw forbiddenError();
+  }
+
+  const newRoom = await bookingRepository.updateBooking(bookingId, roomId);
+
+  return { bookingId: newRoom.id };
+}
+
 export const bookingService = {
   listUserRoom,
   createBooking,
+  updateBooking,
 };
