@@ -59,17 +59,17 @@ async function updateBooking(userId: number, roomId: number, bookingId: number) 
     throw forbiddenError();
   }
 
-  const userRoom = bookingRepository.findUserRoom(bookingId, userId);
-  if (!userRoom) {
-    throw forbiddenError();
-  }
-
   const booking = await bookingRepository.findBooking(roomId);
   if (!booking) {
     throw notFoundError();
   }
 
   if (booking.Booking.length === booking.capacity) {
+    throw forbiddenError();
+  }
+
+  const userRoom = bookingRepository.findUserRoom(bookingId, userId);
+  if (!userRoom || !bookingId) {
     throw forbiddenError();
   }
 
