@@ -1,85 +1,67 @@
+import { notFoundError } from '@/errors';
+import { badRequestError } from '@/errors/bad-request-error';
+import { cannotBookingError } from '@/errors/cannot-booking-error';
 import bookingRepository from '@/repositories/booking-repository';
 import enrollmentRepository from '@/repositories/enrollment-repository';
+import roomRepository from '@/repositories/room-repository';
 import ticketsRepository from '@/repositories/tickets-repository';
-import { notFoundError, forbiddenError } from '@/errors';
 
-async function listUserRoom(userId: number) {
+async function checkEnrollmentTicket(userId: number) {
   const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
-  if (!enrollment) {
-    throw notFoundError();
-  }
+  if (!enrollment) throw cannotBookingError();
 
   const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
-  if (!ticket) {
-    throw notFoundError();
-  }
 
-  const booking = await bookingRepository.findUserBooking(userId);
-
-  if (!booking) {
-    throw notFoundError();
+  if (!ticket || ticket.status === 'RESERVED' || ticket.TicketType.isRemote || !ticket.TicketType.includesHotel) {
+    throw cannotBookingError();
   }
+}
+
+async function checkValidBooking(roomId: number) {
+  const room = await roomRepository.findById(roomId);
+  const bookings = await bookingRepository.findByRoomId(roomId);
+
+  if (!room) throw notFoundError();
+  if (room.capacity <= bookings.length) throw cannotBookingError();
+}
+
+async function getBooking(userId: number) {
+  const booking = await bookingRepository.findByUserId(userId);
+  if (!booking) throw notFoundError();
 
   return booking;
 }
 
-async function createBooking(userId: number, roomId: number) {
-  const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
-  if (!enrollment) {
-    throw forbiddenError();
-  }
+async function bookingRoomById(userId: number, roomId: number) {
+  if (!roomId) throw badRequestError();
 
-  const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
-  if (!ticket || ticket.TicketType.isRemote || ticket.status !== 'PAID' || !ticket.TicketType.includesHotel) {
-    throw forbiddenError();
-  }
+  await checkEnrollmentTicket(userId);
+  await checkValidBooking(roomId);
 
-  const booking = await bookingRepository.findBooking(roomId);
-  if (!booking) {
-    throw notFoundError();
-  }
-
-  if (booking.Booking.length === booking.capacity) {
-    throw forbiddenError();
-  }
-
-  const newBooking = await bookingRepository.insertBooking(userId, roomId);
-
-  return { bookingId: newBooking.id };
+  return bookingRepository.create({ roomId, userId });
 }
 
-async function updateBooking(userId: number, roomId: number, bookingId: number) {
-  const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
-  if (!enrollment) {
-    throw forbiddenError();
-  }
+async function changeBookingRoomById(userId: number, roomId: number) {
+  if (!roomId) throw badRequestError();
 
-  const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
-  if (!ticket || ticket.TicketType.isRemote || ticket.status !== 'PAID' || !ticket.TicketType.includesHotel) {
-    throw forbiddenError();
-  }
+  await checkValidBooking(roomId);
+  const booking = await bookingRepository.findByUserId(userId);
 
-  const booking = await bookingRepository.findBooking(roomId);
-  if (!booking) {
-    throw notFoundError();
-  }
+  if (!booking || booking.userId !== userId) throw cannotBookingError();
 
-  if (booking.Booking.length === booking.capacity) {
-    throw forbiddenError();
-  }
-
-  const userRoom = await bookingRepository.findUserRoom(bookingId, userId);
-  if (!userRoom) {
-    throw forbiddenError();
-  }
-
-  const newRoom = await bookingRepository.updateBooking(bookingId, roomId);
-
-  return { bookingId: newRoom.id };
+  return bookingRepository.upsertBooking({
+    id: booking.id,
+    roomId,
+    userId,
+  });
 }
 
-export const bookingService = {
-  listUserRoom,
-  createBooking,
-  updateBooking,
+const bookingService = {
+  bookingRoomById,
+  getBooking,
+  changeBookingRoomById,
+  checkEnrollmentTicket,
+  checkValidBooking,
 };
+
+export default bookingService;
